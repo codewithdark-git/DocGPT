@@ -1,0 +1,26 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.4.2
+pydantic-settings==2.0.3
+python-dotenv==1.0.0
+python-multipart==0.0.6
+
+# LangChain and LLM dependencies
+langchain==0.1.0
+langchain-groq==0.0.1
+groq==0.4.1
+openai==1.3.0
+
+# ML and Image Processing
+numpy==1.26.1
+pandas==2.1.2
+pillow==10.1.0
+torch  # Alternative deep learning framework
+
+# Testing
+pytest==7.4.3
+httpx==0.25.0  # For async HTTP requests in tests
+
+# UI
+streamlit==1.31.0
+requests==2.31.0  # For making HTTP requests to FastAPI backend  
