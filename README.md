@@ -19,6 +19,7 @@ DocGPT (Doctor GPT) is an advanced medical diagnosis system that combines Vision
   - Pneumonia (X-ray Analysis)
   - Brain Tumor (Coming Soon)
   - Heart Disease (Coming Soon)
+  - [See the DocGPT models Code](https://github.com/XCollab/DocGPT-Models.git)
 
 - **AI-Powered Analysis**: 
   - Deep learning models for accurate disease detection
