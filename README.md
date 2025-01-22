@@ -1,5 +1,9 @@
 # DocGPT (Doctor GPT) - AI-Powered Medical Diagnosis System
 
+![Docker Image Size](https://img.shields.io/docker/image-size/codewithdark/docgpt?label=Docker%20Image%20Size&logo=docker)
+![Docker Pulls](https://img.shields.io/docker/pulls/codewithdark/docgpt?logo=docker)
+
+
 DocGPT (Doctor GPT) is an advanced medical diagnosis system that combines Vision Transformer (ViT) based deep learning models with LangChain agents to provide comprehensive medical image analysis and detailed diagnostic reports. The system leverages the power of PyTorch for deep learning and Groq's LLM for generating human-like medical insights.
 
 ## Core Technology
