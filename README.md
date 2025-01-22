@@ -102,14 +102,6 @@ streamlit run streamlit_app.py
     - `disease_type`: Type of disease to predict
     - `file`: Image file
 
-## Model Testing
-
-Test individual models using the provided test scripts:
-
-```bash
-# Test Eye Disease Model
-python test_eye.py path/to/eye/image.jpg
-```
 
 ## Project Structure
 
