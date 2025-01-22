@@ -1,58 +1,73 @@
-import base64
-import tempfile
-from pathlib import Path
-from fastapi import APIRouter, HTTPException
-from app.schemas.prediction import PredictionRequest, PredictionResponse, DiseaseType
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from app.schemas.prediction import PredictionResponse, DiseaseType
 from app.services.langchain_agents import DiseaseAgent
+from langchain.schema import AIMessage
+import tempfile
+import os
+import logging
 
 router = APIRouter()
+logging.basicConfig(level=logging.INFO)
 
 @router.post("/", response_model=PredictionResponse)
-async def predict_disease(request: PredictionRequest) -> PredictionResponse:
-    """
-    Predict disease from an uploaded image.
-    
-    Parameters:
-    - disease_type: Type of disease to predict
-    - image_base64: Base64 encoded image data
-    
-    Returns:
-    - Prediction results including confidence score and analysis
-    """
+async def predict_disease(
+    disease_type: DiseaseType,
+    file: UploadFile = File(...)
+) -> PredictionResponse:
+    temp_path = None
     try:
-        # Decode base64 image and save temporarily
-        image_data = base64.b64decode(request.image_base64)
+        # Create a temporary file to save the uploaded image
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
-            temp_file.write(image_data)
             temp_path = temp_file.name
+            contents = await file.read()
+            temp_file.write(contents)
 
-        # Initialize disease agent and get prediction
-        agent = DiseaseAgent(img_path=temp_path, task=request.disease_type.value)
+        # Get prediction from agent
+        agent = DiseaseAgent(img_path=temp_path, task=disease_type.value)
         result = agent.response()
+        
+        # Debug log
+        logging.info(f"Agent Response: {result}")
+        logging.info(f"Response Type: {type(result)}")
 
-        # Clean up temporary file
-        Path(temp_path).unlink()
+        if not result or not isinstance(result, dict):
+            raise HTTPException(status_code=500, detail=f"Invalid response from prediction service: {result}")
 
-        if "error" in result:
-            return PredictionResponse(
-                disease_type=request.disease_type,
-                prediction="",
-                confidence=0.0,
-                analysis="",
-                status="error",
-                error_message=str(result["error"])
-            )
+        # Extract and format the analysis
+        analysis = result.get("analysis", "")
+        prediction = result.get("prediction", "")
+        confidence = result.get("confidence", 0.0)
 
-        return PredictionResponse(
-            disease_type=request.disease_type,
-            prediction=result["prediction"],
-            confidence=result["confidence"],
-            analysis=result["analysis"],
+        logging.info(f"Analysis: {analysis}, Type: {type(analysis)}")
+        logging.info(f"Prediction: {prediction}, Type: {type(prediction)}")
+        logging.info(f"Confidence: {confidence}, Type: {type(confidence)}")
+
+        if isinstance(analysis, AIMessage):
+            analysis = analysis.content
+        elif not isinstance(analysis, str):
+            analysis = str(analysis)
+
+        # Create response
+        response = PredictionResponse(
+            disease_type=disease_type,
+            prediction=str(prediction),
+            confidence=float(confidence),
+            analysis=analysis,
             status="success"
         )
 
+        return response
+
     except Exception as e:
+        logging.error(f"Error in prediction: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing prediction: {str(e)}"
         )
+    finally:
+        # Clean up temporary file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
