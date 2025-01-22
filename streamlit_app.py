@@ -43,10 +43,8 @@ if uploaded_file is not None:
         
         try:
             # Make API request based on disease type
-            if disease_type == "Skin Cancer":
-                response = requests.post("http://localhost:8000/predict/skin-cancer", files=files)
-            else:  # Pneumonia
-                response = requests.post("http://localhost:8000/predict/pneumonia", files=files)
+            if disease_type:
+                response = requests.post("http://localhost:8000/api/v1/predict", files=files)  # Updated endpoint
             
             if response.status_code == 200:
                 result = response.json()
@@ -59,4 +57,4 @@ if uploaded_file is not None:
                 
         except requests.exceptions.RequestException as e:
             st.error(f"Error connecting to the server: {str(e)}")
-            st.info("Make sure the FastAPI backend is running on http://localhost:8000") 
+            st.info("Make sure the FastAPI backend is running on http://localhost:8000")
