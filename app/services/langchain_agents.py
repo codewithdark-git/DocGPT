@@ -8,6 +8,7 @@ from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from .Pneumonia import Pneumonia
 from .Skin_cancer import MelanomaPipeline
+from .Eye import Eye
 from app.config import get_settings
 
 settings = get_settings()
@@ -20,7 +21,9 @@ class DiseaseAgent:
         self.image_path = img_path
         self.task = task
         self.prompt = PromptTemplate(
-            template="You are an expert in {task} diagnosis. Given a {task} image, provide a detailed analysis and recommendations.\nPrediction: {prediction}\nConfidence: {confidence}",
+            template="""As a specialist in {task} diagnosis, analyze the provided {task} image and offer a comprehensive 
+            report including the diagnosis, severity, and treatment recommendations.\nDiagnosis: {prediction}\nConfidence Level: 
+            {confidence}""",
             input_variables=["task", "prediction", "confidence"]
         )
         self.llm = ChatGroq(
@@ -31,12 +34,16 @@ class DiseaseAgent:
         # Initialize models only when needed
         self._pneumonia_model: Optional[Pneumonia] = None
         self._melanoma_model: Optional[MelanomaPipeline] = None
+        self._brain_model: Optional[Any] = None
+        self._heart_model: Optional[Any] = None
+        self._eye_model: Optional[Any] = None
         
         self.task_to_model = {
-            "Pneumonia": self.predict_pneumonia,
-            "Melanoma": self.predict_melanoma,
-            "Brain": self.predict_brain,
-            "Heart": self.predict_heart,
+            "pneumonia": self.predict_pneumonia,
+            "skin_cancer": self.predict_melanoma,
+            "brain_tumor": self.predict_brain,
+            "heart_disease": self.predict_heart,
+            "eye_disease": self.predict_eye,
         }
 
     def process_image(self) -> Optional[str]:
@@ -50,11 +57,9 @@ class DiseaseAgent:
                 base64_str = base64.b64encode(image_bytes).decode("utf-8")
                 return base64_str
         except (IOError, OSError) as e:
-            logging.error(f"Error processing image: {e}")
             raise ValueError(f"Invalid image file: {e}")
         except Exception as e:
-            logging.error(f"Unexpected error processing image: {e}")
-            return None
+            return f"Error Occur while creating"
 
     def agent(self) -> Tuple[str, float]:
         """Select the appropriate model for the task and make predictions."""
@@ -75,12 +80,24 @@ class DiseaseAgent:
             self._melanoma_model = MelanomaPipeline()
         return self._melanoma_model
 
+    @property
+    def eye_model(self) -> Eye:
+        if self._eye_model is None:
+            self._eye_model = Eye()
+        return self._eye_model
+    
+    def predict_eye(self) -> Tuple[str, float]:
+        """Predict eye condition."""
+        try:
+            return self.eye_model.predict_with_torch(self.image_path)
+        except Exception as e:
+            raise RuntimeError(f"Error predicting Eye: {str(e)}")
+        
     def predict_pneumonia(self) -> Tuple[str, float]:
         """Predict pneumonia using the Pneumonia model."""
         try:
             return self.pneumonia_model.predict_with_torch(self.image_path)
         except Exception as e:
-            logging.error(f"Error predicting Pneumonia: {e}")
             raise RuntimeError(f"Error predicting Pneumonia: {str(e)}")
 
     def predict_melanoma(self) -> Tuple[str, float]:
@@ -88,7 +105,6 @@ class DiseaseAgent:
         try:
             return self.melanoma_model.predict_with_torch(self.image_path)
         except Exception as e:
-            logging.error(f"Error predicting Melanoma: {e}")
             raise RuntimeError(f"Error predicting Melanoma: {str(e)}")
 
     def predict_brain(self) -> Tuple[str, float]:
@@ -120,5 +136,4 @@ class DiseaseAgent:
                 "analysis": analysis
             }
         except Exception as e:
-            logging.error(f"Error generating response: {e}")
             return {"error": str(e)}
