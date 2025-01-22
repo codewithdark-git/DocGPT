@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from PIL import Image
 import torch
+import logging
+from pathlib import Path
 from app.config import get_settings
-from ..utils.melanomaNN import MelanomaCNN
 
 settings = get_settings()
 
@@ -11,15 +12,23 @@ class MelanomaPipeline:
     def __init__(self, model_path=settings.SKIN_MODEL_PATH, img_size=224):
         self.model_path = model_path
         self.img_size = img_size
-        self.net = self._load_model()
+        self.model = self._load_model()
 
     def _load_model(self):
         """Loads the trained model."""
-        net = MelanomaCNN()
-        net.load_state_dict(torch.load(self.model_path))
-        net.eval()
-        print(f"Model loaded from {self.model_path}")
-        return net
+        try:
+            # Ensure the model path exists
+            model_path = Path(self.model_path)
+            if not model_path.exists():
+                raise FileNotFoundError(f"Model file not found at {model_path}")
+
+            model = torch.load(model_path, map_location=torch.device("cpu"))
+            model.eval()
+            logging.info("Model loaded successfully")
+            return model
+
+        except Exception as e:
+            logging.error(f"Model loading error: {str(e)}")
 
     def preprocess_image(self, image_path):
         """Reads and preprocesses the input image."""
@@ -34,7 +43,7 @@ class MelanomaPipeline:
     def predict(self, image_tensor):
         """Makes a prediction on the preprocessed image tensor."""
         with torch.no_grad():
-            output = self.net(image_tensor)[0]
+            output = self.model(image_tensor)[0]
         prediction = "BENIGN" if output[0] >= output[1] else "MELANOMA"
         confidence = round(float(output.max()), 3)
         return prediction, confidence
