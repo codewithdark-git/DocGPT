@@ -55,6 +55,8 @@ if uploaded_file is not None:
             else:
                 st.error(f"Error: {response.status_code} - {response.text}")
                 
+
+                
         except requests.exceptions.RequestException as e:
             st.error(f"Error connecting to the server: {str(e)}")
             st.info("Make sure the FastAPI backend is running on http://localhost:8000")
